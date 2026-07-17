@@ -2,6 +2,8 @@
 
 Inventory map from upstream `tzervas/tg-agent-relay`. Phases match `plans/fractal/P22_TGAR_RS_DESIGN.md`.
 
+**Transpile / gap honesty (P23):** see [TRANSPILE_RESEARCH.md](TRANSPILE_RESEARCH.md) for the py2rust assessment of Mycelium transpiler machinery (process only).
+
 | Phase | Scope |
 |-------|--------|
 | **0** | Scaffold, CLI, config load, metrics append |
