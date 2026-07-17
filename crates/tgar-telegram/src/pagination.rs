@@ -31,8 +31,7 @@ pub fn paginate(text: &str, page_size: usize) -> Vec<String> {
         }
 
         if !cur.is_empty() {
-            pages.push(cur);
-            cur = String::new();
+            pages.push(std::mem::take(&mut cur));
         }
 
         if line.len() <= page_size {
@@ -68,7 +67,7 @@ pub fn format_page_payloads(pages: &[String]) -> Vec<String> {
     pages
         .iter()
         .enumerate()
-        .map(|(idx, page)| format!("[{}/{total}]\n{page}", idx = idx + 1))
+        .map(|(idx, page)| format!("[{}/{total}]\n{page}", idx + 1))
         .collect()
 }
 

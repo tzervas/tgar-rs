@@ -51,7 +51,7 @@ fn run() -> Result<(), String> {
     let cli = Cli::parse();
     match cli.command {
         None | Some(Commands::Version) => {
-            println!("tgar {VERSION}");
+            println!("{VERSION}");
             Ok(())
         }
         Some(Commands::Send {

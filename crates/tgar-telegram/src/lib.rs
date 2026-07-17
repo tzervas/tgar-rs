@@ -1,14 +1,11 @@
-//! Telegram Bot API layer (Phase 1–2 port target).
+//! Telegram Bot API layer for **tgar-rs** (P22c: sendMessage + pagination).
+//!
+//! Live sends require `BOT_TOKEN` in the environment (see workspace `README.md` and `docs/TELEGRAM.md`).
 
-/// Placeholder until send/poll HTTP client lands.
-pub const CRATE_MARKER: &str = "tgar-telegram";
+mod bot;
+mod http;
+mod pagination;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn marker_present() {
-        assert!(!CRATE_MARKER.is_empty());
-    }
-}
+pub use bot::{encode_send_message_form, SendMessageParams, TelegramBot};
+pub use http::{HttpClient, HttpError, HttpResponse, MockHttpClient, UreqHttpClient};
+pub use pagination::{format_page_payloads, paginate};

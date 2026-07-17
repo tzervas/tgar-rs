@@ -82,3 +82,9 @@ impl HttpClient for MockHttpClient {
         })
     }
 }
+
+impl<T: HttpClient + ?Sized> HttpClient for std::sync::Arc<T> {
+    fn post_form(&self, url: &str, body: &str) -> Result<HttpResponse, HttpError> {
+        self.as_ref().post_form(url, body)
+    }
+}

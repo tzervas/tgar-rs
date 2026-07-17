@@ -1,6 +1,6 @@
 [package]
 name = "tgar-telegram"
-description = "Telegram Bot API client for tgar-rs (port in progress)"
+description = "Telegram Bot API client for tgar-rs (sendMessage, pagination)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -8,3 +8,7 @@ repository.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+ureq = { workspace = true }
+
+[lints]
+workspace = true

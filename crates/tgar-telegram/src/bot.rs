@@ -113,8 +113,10 @@ mod tests {
 
     #[test]
     fn send_message_posts_to_bot_url() {
-        let mock = MockHttpClient::with_ok_response();
-        let bot = TelegramBot::new("tok123", &mock);
+        use std::sync::Arc;
+
+        let mock = Arc::new(MockHttpClient::with_ok_response());
+        let bot = TelegramBot::new("tok123", Arc::clone(&mock));
         let ok = bot
             .send_message(SendMessageParams {
                 chat_id: "-100",
@@ -138,7 +140,7 @@ mod tests {
             response_body: std::sync::Mutex::new(r#"{"ok":false}"#.to_string()),
             ..Default::default()
         };
-        let bot = TelegramBot::new("t", &mock);
+        let bot = TelegramBot::new("t", mock);
         let ok = bot
             .send_message(SendMessageParams {
                 chat_id: "1",
