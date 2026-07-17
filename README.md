@@ -7,18 +7,39 @@
 
 **tgar** — Rust implementation of [TG Agent Relay](https://github.com/tzervas/tg-agent-relay) (iterative port; short name **tgar**).
 
-The Python/shell product remains the shipping SoT until module parity; this repo is the strangler replacement behind optional `RELAY_IMPL=rust` (documented in P22d).
+**Who / what / why:** operators who already run the Python/shell relay and want a single static binary path for outbound Telegram send (and later poll/hooks), without rewriting bridge install paths. This repo is the strangler replacement behind optional `RELAY_IMPL=rust` (see `docs/STRANGLER.md`).
 
-## Status
+## Honest product status
 
-Phase **0** scaffold plus **P22c**: `tgar send` (dry-run without `BOT_TOKEN`), `tgar-telegram` `sendMessage` + pagination + mock HTTP tests. See `docs/TELEGRAM.md`.
+| Surface | Python SoT (`tg-agent-relay`) | Rust (`tgar-rs`) today |
+|---------|-------------------------------|-------------------------|
+| Version | shipping **0.10.x** | **0.1.0-dev** (`tgar version`) |
+| Outbound send | `tg-send.sh` / `send.py` (live) | `tgar send` — dry-run without `BOT_TOKEN`; live `sendMessage` + pagination when token set |
+| Config | full `relay.toml` + overlays | `tgar config check` — TOML parse + table list + `page_size` (schema stub) |
+| Poll / route / hooks / TTS | full product | **not shipped** (see `docs/PORTING.md`) |
+| Operator default | **`RELAY_IMPL=python`** | opt-in only after dual-run green per surface |
 
-## Build
+**Shipping SoT remains Python** until a surface’s Phase exit criteria pass. Do not claim production cutover for poll/hooks yet.
+
+## 5-minute path (offline)
 
 ```bash
+git clone https://github.com/tzervas/tgar-rs.git
+cd tgar-rs
 cargo build -p tgar
 cargo test --workspace
-./target/debug/tgar version   # 0.1.0-dev
+
+./target/debug/tgar version
+# → 0.1.0-dev
+
+./target/debug/tgar send --text "Hello" --dry-run
+# → Hello
+
+./target/debug/tgar config check --path fixtures/relay.minimal.toml
+# → ok: fixtures/relay.minimal.toml (tables=[format, general]; page_size=3500; …)
+
+./scripts/dual-run-smoke.sh
+# → dual-run-smoke: green (offline Rust path)
 ```
 
 MSRV is pinned in `rust-toolchain.toml` (1.96, aligned with tg-agent-relay).
@@ -27,16 +48,16 @@ MSRV is pinned in `rust-toolchain.toml` (1.96, aligned with tg-agent-relay).
 
 | Crate | Role |
 |-------|------|
-| `tgar` | CLI binary |
-| `tgar-core` | Config, routing, metrics, stamps, goals, plans |
-| `tgar-telegram` | Telegram Bot API client |
+| `tgar` | CLI binary (`version`, `config check`, `send`) |
+| `tgar-core` | Config stub, stamps, goals, pure ports |
+| `tgar-telegram` | Telegram Bot API client + pagination |
 | `tgar-tts` | Prose strip + piper/espeak spawn (optional; Phase 5) |
 
 ## Porting accelerator
 
 Pure-Python modules may be assisted with [py2rust](https://github.com/tzervas/py2rust) during porting. **py2rust is not required to build or run tgar-rs.**
 
-See `docs/PORTING.md` for the module map and `docs/COMPAT.md` for `relay.toml` compatibility targets.
+See `docs/PORTING.md` for the module map, `docs/COMPAT.md` for `relay.toml` keys, `docs/STRANGLER.md` for cutover, and `docs/RELEASE.md` for the path to **0.1.0**.
 
 ## Telegram credentials
 
@@ -50,6 +71,7 @@ Without `BOT_TOKEN`, `tgar send` **dry-runs**: prints paginated pages only (no n
 ```bash
 tgar send --text "Hello"
 tgar send --text "..." --page-size 3500
+tgar send --text "..." --dry-run
 ```
 
 ## License

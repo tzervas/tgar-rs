@@ -1,0 +1,8 @@
+# Minimal relay.toml fixture for offline `tgar config check` / dual-run smoke.
+# Not a full production config — schema keys only for Phase 0 parse smoke.
+
+[general]
+page_size = 3500
+
+[format]
+enabled = true
