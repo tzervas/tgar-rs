@@ -1,0 +1,20 @@
+[package]
+name = "tgar"
+description = "tgar CLI — Rust implementation of TG Agent Relay"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "tgar"
+path = "src/main.rs"
+
+[dependencies]
+clap = { workspace = true }
+tgar-core.workspace = true
+tgar-telegram.workspace = true
+
+[lints]
+workspace = true

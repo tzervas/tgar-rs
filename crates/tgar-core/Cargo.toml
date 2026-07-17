@@ -1,0 +1,16 @@
+[package]
+name = "tgar-core"
+description = "TG Agent Relay core: config, routing, metrics (port in progress)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+regex.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

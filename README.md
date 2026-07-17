@@ -1,51 +1,38 @@
 # tgar-rs
 
-Rust implementation of [TG Agent Relay](https://github.com/tzervas/tg-agent-relay) (strangler port).
+**tgar** — Rust implementation of [TG Agent Relay](https://github.com/tzervas/tg-agent-relay) (iterative port; short name **tgar**).
 
-## Workspace
+The Python/shell product remains the shipping SoT until module parity; this repo is the strangler replacement behind optional `RELAY_IMPL=rust` (documented in P22d).
+
+## Status
+
+Phase **0** scaffold: workspace crates, `tgar version`, docs inventory (`docs/PORTING.md`, `docs/COMPAT.md`).
+
+## Build
+
+```bash
+cargo build -p tgar
+cargo test --workspace
+./target/debug/tgar version   # 0.1.0-dev
+```
+
+MSRV is pinned in `rust-toolchain.toml` (1.96, aligned with tg-agent-relay).
+
+## Crates
 
 | Crate | Role |
 |-------|------|
 | `tgar` | CLI binary |
-| `tgar-core` | Config, metrics, routing (P22b+) |
-| `tgar-telegram` | Bot API client, pagination |
+| `tgar-core` | Config, routing, metrics, stamps, goals, plans |
+| `tgar-telegram` | Telegram Bot API client |
+| `tgar-tts` | Prose strip + piper/espeak spawn (optional; Phase 5) |
 
-## Build & test
+## Porting accelerator
 
-```bash
-cargo test
-cargo build -p tgar
-```
+Pure-Python modules may be assisted with [py2rust](https://github.com/tzervas/py2rust) during porting. **py2rust is not required to build or run tgar-rs.**
 
-## Telegram credentials
+See `docs/PORTING.md` for the module map and `docs/COMPAT.md` for `relay.toml` compatibility targets.
 
-**Live** `sendMessage` calls require a bot token in the environment:
+## License
 
-- `BOT_TOKEN` — Telegram Bot API token (never commit; use `.env` or private overlay per relay docs)
-- `ALLOWED_CHAT_ID` — default destination chat for `tgar send` (or pass `--chat-id`)
-
-Without `BOT_TOKEN`, `tgar send` runs in **dry-run** mode and prints paginated pages to stdout (no network).
-
-## CLI
-
-```bash
-# Version
-tgar version
-
-# Dry-run pagination (no token required)
-tgar send --text "Hello from tgar-rs"
-
-# Live send (token + chat required)
-export BOT_TOKEN=...
-export ALLOWED_CHAT_ID=-100...
-tgar send --text "Hello"
-```
-
-Options:
-
-- `--page-size` — default `3500` (matches `relay.toml` `[general].page_size`)
-- `--dry-run` — force print-only even if `BOT_TOKEN` is set
-
-## Status
-
-Phase P22c: `sendMessage` (url-encoded POST), pagination helpers, mock HTTP tests. See `docs/PORTING.md` and `plans/fractal/P22_TGAR_RS_DESIGN.md` in the homelab plans tree.
+MIT — same as tg-agent-relay.
