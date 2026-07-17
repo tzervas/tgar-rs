@@ -1,5 +1,10 @@
 # tgar-rs
 
+<!-- FLEET-BADGES:BEGIN -->
+[![CI](https://github.com/tzervas/tgar-rs/actions/workflows/fleet-ci.yml/badge.svg?branch=main)](https://github.com/tzervas/tgar-rs/actions/workflows/fleet-ci.yml?query=branch%3Amain)
+[![Security](https://github.com/tzervas/tgar-rs/actions/workflows/fleet-security.yml/badge.svg?branch=main)](https://github.com/tzervas/tgar-rs/actions/workflows/fleet-security.yml?query=branch%3Amain)
+<!-- FLEET-BADGES:END -->
+
 **tgar** — Rust implementation of [TG Agent Relay](https://github.com/tzervas/tg-agent-relay) (iterative port; short name **tgar**).
 
 The Python/shell product remains the shipping SoT until module parity; this repo is the strangler replacement behind optional `RELAY_IMPL=rust` (documented in P22d).
