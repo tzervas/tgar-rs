@@ -1,10 +1,11 @@
 //! `tgar` — CLI entry for the Rust TG Agent Relay port.
 
 use std::io::{self, Read};
+use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
-use tgar_core::VERSION;
+use tgar_core::{default_config_path, load_config, VERSION};
 use tgar_telegram::{
     format_page_payloads, paginate, SendMessageParams, TelegramBot, UreqHttpClient,
 };
@@ -20,6 +21,11 @@ struct Cli {
 enum Commands {
     /// Print version string.
     Version,
+    /// Config surface (Phase 0 stub).
+    Config {
+        #[command(subcommand)]
+        command: ConfigCmd,
+    },
     /// Paginate and send (or dry-run) outbound text.
     Send {
         /// Message body (if omitted, read stdin).
@@ -34,6 +40,16 @@ enum Commands {
         /// Force dry-run: print pages only, no HTTP.
         #[arg(long)]
         dry_run: bool,
+    },
+}
+
+#[derive(Subcommand)]
+enum ConfigCmd {
+    /// Validate `relay.toml` exists and parses (schema parity later).
+    Check {
+        /// Path to relay.toml (default: `RELAY_CONFIG` or `./relay.toml`).
+        #[arg(long)]
+        path: Option<PathBuf>,
     },
 }
 
@@ -54,6 +70,9 @@ fn run() -> Result<(), String> {
             println!("{VERSION}");
             Ok(())
         }
+        Some(Commands::Config {
+            command: ConfigCmd::Check { path },
+        }) => cmd_config_check(path),
         Some(Commands::Send {
             text,
             page_size,
@@ -61,6 +80,22 @@ fn run() -> Result<(), String> {
             dry_run,
         }) => cmd_send(text, page_size, chat_id, dry_run),
     }
+}
+
+fn cmd_config_check(path: Option<PathBuf>) -> Result<(), String> {
+    let path = path.unwrap_or_else(default_config_path);
+    let cfg = load_config(&path)?;
+    let page = cfg
+        .page_size
+        .map(|n| n.to_string())
+        .unwrap_or_else(|| "default".into());
+    println!(
+        "ok: {} (tables=[{}]; page_size={}; stub — full schema Phase 0+)",
+        cfg.path.display(),
+        cfg.tables.join(", "),
+        page
+    );
+    Ok(())
 }
 
 fn cmd_send(
