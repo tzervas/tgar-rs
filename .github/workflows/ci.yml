@@ -50,16 +50,12 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --all -- --check
 
-      # Gated at clippy::all, with pedantic left as warnings. Cargo.toml opts
-      # this workspace into `pedantic = "warn"` deliberately, and there are 41
-      # of them today — must_use_candidate, missing_errors_doc,
-      # map_unwrap_or and friends. Gating on `-D warnings` would therefore make
-      # this job a 41-item cleanup rather than a gate, and the honest choice is
-      # to gate at the level the code actually holds rather than to ship a
-      # red check or to silence the lints.
+      # -D warnings, at the full pedantic level Cargo.toml opts into.
       #
-      # Measured: `-A clippy::pedantic -D clippy::all` exits 0 across the
-      # workspace right now, so this fails only on a real regression.
-      # Tightening to -D warnings is a follow-up, and worth doing once the
-      # pedantic backlog is cleared — not by disabling pedantic.
-      - run: cargo clippy --workspace --all-targets -- -A clippy::pedantic -D clippy::all
+      # The backlog this was going to be gated below is gone: all 41 pedantic
+      # warnings are fixed, so the gate is set where the code actually is
+      # rather than where it was convenient. Setting it at zero is the only
+      # cheap moment — a backlog allowed to accumulate becomes a separate
+      # project nobody schedules, which is exactly how it reached 41 with no
+      # fmt or clippy step in any workflow to notice.
+      - run: cargo clippy --workspace --all-targets -- -D warnings

@@ -1,6 +1,7 @@
 //! `sendMessage` via url-encoded POST (parity with `tg_agent_relay.send.send_message`).
 
 use crate::http::{HttpClient, HttpError};
+use std::fmt::Write;
 
 /// Parameters for [`TelegramBot::send_message`].
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -31,8 +32,14 @@ impl<C: HttpClient> TelegramBot<C> {
     }
 
     /// POST `sendMessage`. Returns `true` when the JSON body contains `"ok":true`.
-    pub fn send_message(&self, params: SendMessageParams<'_>) -> Result<bool, HttpError> {
-        let body = encode_send_message_form(&params);
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` when the underlying HTTP request fails. A non-`ok`
+    /// response from Telegram is *not* an error — it returns `Ok(false)`, so a
+    /// rejected send and a failed connection stay distinguishable.
+    pub fn send_message(&self, params: &SendMessageParams<'_>) -> Result<bool, HttpError> {
+        let body = encode_send_message_form(params);
         let url = self.api_url("sendMessage");
         let resp = self.client.post_form(&url, &body)?;
         Ok(response_ok(&resp.body))
@@ -44,6 +51,7 @@ fn response_ok(raw: &str) -> bool {
 }
 
 /// Percent-encode form fields for Telegram Bot API (same shape as Python `urllib.parse.urlencode`).
+#[must_use]
 pub fn encode_send_message_form(params: &SendMessageParams<'_>) -> String {
     let mut pairs: Vec<(&str, &str)> = vec![("chat_id", params.chat_id), ("text", params.text)];
     if let Some(pm) = params.parse_mode.filter(|s| !s.is_empty()) {
@@ -70,7 +78,7 @@ fn percent_encode(s: &str) -> String {
                 out.push(b as char);
             }
             b' ' => out.push_str("%20"),
-            _ => out.push_str(&format!("%{b:02X}")),
+            _ => write!(out, "%{b:02X}").expect("writing to a String cannot fail"),
         }
     }
     out
@@ -115,7 +123,7 @@ mod tests {
         let mock = Arc::new(MockHttpClient::with_ok_response());
         let bot = TelegramBot::new("tok123", Arc::clone(&mock));
         let ok = bot
-            .send_message(SendMessageParams {
+            .send_message(&SendMessageParams {
                 chat_id: "-100",
                 text: "ping",
                 parse_mode: None,
@@ -139,7 +147,7 @@ mod tests {
         };
         let bot = TelegramBot::new("t", mock);
         let ok = bot
-            .send_message(SendMessageParams {
+            .send_message(&SendMessageParams {
                 chat_id: "1",
                 text: "x",
                 parse_mode: None,

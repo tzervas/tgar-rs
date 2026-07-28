@@ -33,6 +33,11 @@ impl std::error::Error for HttpError {}
 
 /// POST `application/x-www-form-urlencoded` bodies (mockable in tests).
 pub trait HttpClient: Send + Sync {
+    /// # Errors
+    ///
+    /// Returns `Err` when the request cannot be completed — DNS, connection,
+    /// TLS or a transport-level failure. An HTTP error *status* is carried in
+    /// the returned [`HttpResponse`], not signalled here.
     fn post_form(&self, url: &str, body: &str) -> Result<HttpResponse, HttpError>;
 }
 
@@ -63,6 +68,7 @@ pub struct MockHttpClient {
 }
 
 impl MockHttpClient {
+    #[must_use]
     pub fn with_ok_response() -> Self {
         Self {
             response_body: std::sync::Mutex::new(r#"{"ok":true,"result":{}}"#.to_string()),

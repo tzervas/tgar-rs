@@ -87,8 +87,7 @@ fn cmd_config_check(path: Option<PathBuf>) -> Result<(), String> {
     let cfg = load_config(&path)?;
     let page = cfg
         .page_size
-        .map(|n| n.to_string())
-        .unwrap_or_else(|| "default".into());
+        .map_or_else(|| "default".into(), |n| n.to_string());
     println!(
         "ok: {} (tables=[{}]; page_size={}; stub — full schema Phase 0+)",
         cfg.path.display(),
@@ -104,15 +103,14 @@ fn cmd_send(
     chat_id: Option<String>,
     dry_run: bool,
 ) -> Result<(), String> {
-    let msg = match text {
-        Some(t) => t,
-        None => {
-            let mut buf = String::new();
-            io::stdin()
-                .read_to_string(&mut buf)
-                .map_err(|e| e.to_string())?;
-            buf
-        }
+    let msg = if let Some(t) = text {
+        t
+    } else {
+        let mut buf = String::new();
+        io::stdin()
+            .read_to_string(&mut buf)
+            .map_err(|e| e.to_string())?;
+        buf
     };
 
     if msg.is_empty() {
@@ -151,7 +149,7 @@ fn cmd_send(
 
     let bot = TelegramBot::new(token, UreqHttpClient);
     for page in &payloads {
-        bot.send_message(SendMessageParams {
+        bot.send_message(&SendMessageParams {
             chat_id: &chat,
             text: page,
             parse_mode: None,

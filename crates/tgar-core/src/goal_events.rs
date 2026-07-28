@@ -37,6 +37,7 @@ pub fn is_update_goal_tool(tool_name: &str) -> bool {
 }
 
 /// Return skip (suppress), soft (one-liner), or pass (unchanged).
+#[must_use]
 pub fn classify_goal_noise(
     text: &str,
     tool_name: &str,
@@ -70,6 +71,7 @@ pub fn classify_goal_noise(
 }
 
 /// Filter outbound text. `None` means do not send.
+#[must_use]
 pub fn apply_goal_noise_policy(
     text: &str,
     tool_name: &str,
@@ -91,6 +93,7 @@ pub fn apply_goal_noise_policy(
 }
 
 /// Adapter/provider hook one-liner filter (`None` → SKIP).
+#[must_use]
 pub fn filter_hook_summary(
     summary: &str,
     tool_name: &str,

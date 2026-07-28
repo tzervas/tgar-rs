@@ -5,6 +5,7 @@
 use regex::Regex;
 use serde_json::Value;
 use std::collections::HashMap;
+use std::hash::BuildHasher;
 use std::sync::LazyLock;
 
 static BRANCH_PREFIX_RE: LazyLock<Regex> =
@@ -18,16 +19,14 @@ static HANDLE_PREFIX_RE: LazyLock<Regex> =
 const RESERVED: &[&str] = &["cabal", "orchestrator", "main", "fleet"];
 
 /// Last path segment of repo name, lowercased, alnum only, max 16 chars.
+#[must_use]
 pub fn repo_short(repo: &str) -> String {
     let mut name = repo.trim();
     if let Some((_prefix, tail)) = name.rsplit_once('/') {
         name = tail;
     }
     let lower = name.to_lowercase();
-    let out: String = lower
-        .chars()
-        .filter(|c| c.is_ascii_alphanumeric())
-        .collect();
+    let out: String = lower.chars().filter(char::is_ascii_alphanumeric).collect();
     out.chars().take(16).collect()
 }
 
@@ -62,8 +61,9 @@ fn collapse_dashes(s: &str) -> String {
 }
 
 /// Full Telegram handle including leading `@`.
+#[must_use]
 pub fn build_handle(repo: &str, branch: &str, repo_name: &str) -> String {
-    let r = repo_short(if !repo.is_empty() { repo } else { repo_name });
+    let r = repo_short(if repo.is_empty() { repo_name } else { repo });
     let br = branch_short(branch);
     if r.is_empty() && br.is_empty() {
         return String::new();
@@ -78,6 +78,7 @@ pub fn build_handle(repo: &str, branch: &str, repo_name: &str) -> String {
 }
 
 /// Strip leading `@` for session filenames / `RELAY_BACKEND` derivation.
+#[must_use]
 pub fn handle_id(handle: &str) -> String {
     let h = handle.trim();
     if let Some(stripped) = h.strip_prefix('@') {
@@ -88,6 +89,7 @@ pub fn handle_id(handle: &str) -> String {
 }
 
 /// True for orchestrator aliases (with or without `@`).
+#[must_use]
 pub fn is_reserved_handle(handle: &str) -> bool {
     let h = handle_id(handle).to_lowercase();
     RESERVED.contains(&h.as_str())
@@ -124,6 +126,7 @@ pub fn strip_orchestrator_prefix(text: &str) -> Option<(String, String)> {
 }
 
 /// Resolve configured orchestrator backend id for reserved aliases.
+#[must_use]
 pub fn orchestrator_backend_id(cfg: &Value, alias: &str) -> String {
     let routing = cfg.get("routing").and_then(|v| v.as_object());
     if let Some(r) = routing {
@@ -152,7 +155,8 @@ pub fn orchestrator_backend_id(cfg: &Value, alias: &str) -> String {
 }
 
 /// Construct handle from `RELAY_AGENT_HANDLE` or `RELAY_REPO` + `RELAY_BRANCH`.
-pub fn build_handle_from_env(env: &HashMap<String, String>) -> String {
+#[must_use]
+pub fn build_handle_from_env<S: BuildHasher>(env: &HashMap<String, String, S>) -> String {
     if let Some(explicit) = env.get("RELAY_AGENT_HANDLE") {
         let e = explicit.trim();
         if !e.is_empty() {
@@ -165,18 +169,17 @@ pub fn build_handle_from_env(env: &HashMap<String, String>) -> String {
     }
     let repo = env
         .get("RELAY_REPO")
-        .map(|s| s.as_str())
-        .unwrap_or("")
+        .map_or("", std::string::String::as_str)
         .trim();
     let branch = env
         .get("RELAY_BRANCH")
-        .map(|s| s.as_str())
-        .unwrap_or("")
+        .map_or("", std::string::String::as_str)
         .trim();
     build_handle(repo, branch, "")
 }
 
 /// `RELAY_BACKEND` when multi-session: handle id without `@`.
+#[must_use]
 pub fn backend_id_from_handle(handle: &str) -> String {
     handle_id(handle)
 }

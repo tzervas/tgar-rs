@@ -4,6 +4,7 @@
 ///
 /// A message within `page_size` is a single unmodified page (no `[k/n]` prefix).
 /// Empty text yields an empty list. Non-positive `page_size` returns the whole text as one page.
+#[must_use]
 pub fn paginate(text: &str, page_size: usize) -> Vec<String> {
     if text.is_empty() {
         return Vec::new();
@@ -59,6 +60,7 @@ pub fn paginate(text: &str, page_size: usize) -> Vec<String> {
 }
 
 /// Apply `[k/n]` prefixes when there is more than one page (tg-send / `build_page_payloads` shape).
+#[must_use]
 pub fn format_page_payloads(pages: &[String]) -> Vec<String> {
     let total = pages.len();
     if total <= 1 {
