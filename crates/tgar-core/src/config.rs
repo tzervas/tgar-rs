@@ -20,13 +20,15 @@ pub struct RelayConfig {
 
 /// Load and lightly validate a `relay.toml` path.
 ///
-/// Errors when the path is missing, empty, or not valid TOML.
+/// # Errors
+///
+/// Returns `Err` when the path is missing, is empty, or is not valid TOML.
 pub fn load_config(path: &Path) -> Result<RelayConfig, String> {
     if !path.is_file() {
         return Err(format!("config not found: {}", path.display()));
     }
-    let text = std::fs::read_to_string(path)
-        .map_err(|e| format!("read {}: {e}", path.display()))?;
+    let text =
+        std::fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))?;
     if text.trim().is_empty() {
         return Err(format!("config empty: {}", path.display()));
     }
@@ -43,7 +45,7 @@ pub fn load_config(path: &Path) -> Result<RelayConfig, String> {
     let page_size = table
         .get("general")
         .and_then(|g| g.get("page_size"))
-        .and_then(|v| v.as_integer())
+        .and_then(toml::Value::as_integer)
         .and_then(|i| u64::try_from(i).ok());
 
     Ok(RelayConfig {
@@ -55,9 +57,7 @@ pub fn load_config(path: &Path) -> Result<RelayConfig, String> {
 
 /// Resolve default config path: `RELAY_CONFIG` env, else `relay.toml` in cwd.
 pub fn default_config_path() -> PathBuf {
-    std::env::var_os("RELAY_CONFIG")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from("relay.toml"))
+    std::env::var_os("RELAY_CONFIG").map_or_else(|| PathBuf::from("relay.toml"), PathBuf::from)
 }
 
 #[cfg(test)]
@@ -67,10 +67,7 @@ mod tests {
 
     #[test]
     fn load_minimal_toml() {
-        let dir = std::env::temp_dir().join(format!(
-            "tgar-config-test-{}",
-            std::process::id()
-        ));
+        let dir = std::env::temp_dir().join(format!("tgar-config-test-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("relay.toml");

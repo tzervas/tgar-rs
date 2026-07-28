@@ -5,6 +5,7 @@
 
 use regex::Regex;
 use std::collections::HashMap;
+use std::hash::BuildHasher;
 use std::sync::LazyLock;
 
 use crate::agent_handle::build_handle_from_env;
@@ -28,6 +29,7 @@ pub struct StampInfo {
 }
 
 impl StampInfo {
+    #[must_use]
     pub fn lines(&self) -> Vec<String> {
         let mut out = Vec::new();
         if !self.handle.is_empty() {
@@ -48,6 +50,7 @@ impl StampInfo {
         out
     }
 
+    #[must_use]
     pub fn text(&self) -> String {
         self.lines().join("\n")
     }
@@ -61,20 +64,28 @@ pub fn parse_github_remote(url: &str) -> (String, String) {
     }
     if let Some(caps) = GH_SSH.captures(url) {
         return (
-            caps.name("owner").map(|m| m.as_str().to_string()).unwrap_or_default(),
-            caps.name("repo").map(|m| m.as_str().to_string()).unwrap_or_default(),
+            caps.name("owner")
+                .map(|m| m.as_str().to_string())
+                .unwrap_or_default(),
+            caps.name("repo")
+                .map(|m| m.as_str().to_string())
+                .unwrap_or_default(),
         );
     }
     if let Some(caps) = GH_HTTPS.captures(url) {
         return (
-            caps.name("owner").map(|m| m.as_str().to_string()).unwrap_or_default(),
-            caps.name("repo").map(|m| m.as_str().to_string()).unwrap_or_default(),
+            caps.name("owner")
+                .map(|m| m.as_str().to_string())
+                .unwrap_or_default(),
+            caps.name("repo")
+                .map(|m| m.as_str().to_string())
+                .unwrap_or_default(),
         );
     }
     (String::new(), String::new())
 }
 
-fn pr_from_env(env: &HashMap<String, String>) -> (String, String) {
+fn pr_from_env<S: BuildHasher>(env: &HashMap<String, String, S>) -> (String, String) {
     let mut url = env
         .get("RELAY_PR_URL")
         .map(|s| s.trim().to_string())
@@ -113,7 +124,11 @@ fn branch_url_from_repo_branch(repo: &str, branch: &str) -> String {
 }
 
 /// Build stamp metadata from environment only (no git subprocess, no `gh`).
-pub fn build_stamp_info(env: &HashMap<String, String>, force_merged: bool) -> StampInfo {
+#[must_use]
+pub fn build_stamp_info<S: BuildHasher>(
+    env: &HashMap<String, String, S>,
+    force_merged: bool,
+) -> StampInfo {
     let repo_env = env
         .get("RELAY_REPO")
         .map(|s| s.trim().to_string())
@@ -144,7 +159,10 @@ pub fn build_stamp_info(env: &HashMap<String, String>, force_merged: bool) -> St
     }
 }
 
-pub fn build_stamp(env: &HashMap<String, String>, body_for_merge_hint: &str) -> String {
+pub fn build_stamp<S: BuildHasher>(
+    env: &HashMap<String, String, S>,
+    body_for_merge_hint: &str,
+) -> String {
     let merged_hint = !body_for_merge_hint.is_empty() && MERGED_RE.is_match(body_for_merge_hint);
     build_stamp_info(env, merged_hint).text()
 }
