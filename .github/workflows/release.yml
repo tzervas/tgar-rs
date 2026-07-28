@@ -1,0 +1,165 @@
+# O11 pilot — fleet release automation (fleet-ops design 2026-07-28).
+# Flow: workflow_dispatch → cz bump on release/vX.Y.Z → PR to main → finalize tag.
+# Default dry_run=true is safe. No secrets beyond GITHUB_TOKEN.
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "auto | patch | minor | major"
+        type: choice
+        options: [auto, patch, minor, major]
+        default: auto
+      dry_run:
+        description: "Resolve next version only — no branch/PR/tag"
+        type: boolean
+        default: true
+      pr_body_extra:
+        description: "Optional notes for the release PR body"
+        type: string
+        required: false
+        default: ""
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  prepare-release:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Install commitizen
+        run: |
+          set -euo pipefail
+          python3 -m pip install --user 'commitizen>=3.30.0'
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Resolve next version
+        id: ver
+        env:
+          BUMP: ${{ inputs.bump }}
+        run: |
+          set -euo pipefail
+          if [[ "$BUMP" == "auto" ]]; then
+            OUT=$(cz bump --dry-run 2>&1 || true)
+          else
+            OUT=$(cz bump --dry-run --increment "$BUMP" 2>&1 || true)
+          fi
+          echo "$OUT" | tee /tmp/cz-dry.txt
+          # commitizen dry-run prints "tag to create: vX.Y.Z" or similar
+          VER=$(grep -oE 'v?[0-9]+\.[0-9]+\.[0-9]+' /tmp/cz-dry.txt | tail -1 | sed 's/^v//')
+          if [[ -z "${VER:-}" ]]; then
+            echo "::error::could not resolve next version from cz bump --dry-run"
+            cat /tmp/cz-dry.txt
+            exit 1
+          fi
+          TAG="v${VER}"
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          {
+            echo "## cz dry-run"
+            echo '```'
+            cat /tmp/cz-dry.txt
+            echo '```'
+            echo
+            echo "Candidate: \`$TAG\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Idempotence — stop if tag exists
+        id: exist
+        env:
+          TAG: ${{ steps.ver.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if git ls-remote --tags origin "refs/tags/${TAG}" | grep -q .; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag ${TAG} already on origin — no-op success." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Dry-run exit
+        if: inputs.dry_run == true || steps.exist.outputs.exists == 'true'
+        run: |
+          echo "dry_run=${{ inputs.dry_run }} tag_exists=${{ steps.exist.outputs.exists }}"
+          echo "No branch/PR/tag created." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Bump on release branch
+        if: inputs.dry_run == false && steps.exist.outputs.exists == 'false'
+        env:
+          BUMP: ${{ inputs.bump }}
+          TAG: ${{ steps.ver.outputs.tag }}
+          VER: ${{ steps.ver.outputs.version }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          BRANCH="release/${TAG}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+          if [[ "$BUMP" == "auto" ]]; then
+            cz bump --yes
+          else
+            cz bump --yes --increment "$BUMP"
+          fi
+          git push -u origin "$BRANCH" --force-with-lease
+          BODY=$(mktemp)
+          {
+            echo "## Release ${TAG}"
+            echo
+            echo "Prepared by \`release.yml\` (O11 pilot). Full main gates must pass before merge."
+            echo
+            echo "${{ inputs.pr_body_extra }}"
+          } > "$BODY"
+          if gh pr view "$BRANCH" --json number >/dev/null 2>&1; then
+            gh pr edit "$BRANCH" --title "chore(release): ${TAG}" --body-file "$BODY"
+          else
+            gh pr create --base main --head "$BRANCH" \
+              --title "chore(release): ${TAG}" \
+              --body-file "$BODY"
+          fi
+
+  finalize-release:
+    if: >
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'release/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Tag and GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          TAG="${HEAD_REF#release/}"
+          if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+            echo "Tag ${TAG} already exists locally — skip create"
+          else
+            git tag -a "$TAG" -m "Release ${TAG}"
+            git push origin "$TAG"
+          fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "GitHub Release ${TAG} already exists"
+          else
+            gh release create "$TAG" --title "tgar-rs ${TAG}" --generate-notes
+          fi
