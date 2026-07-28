@@ -24,7 +24,10 @@ pub fn repo_short(repo: &str) -> String {
         name = tail;
     }
     let lower = name.to_lowercase();
-    let out: String = lower.chars().filter(|c| c.is_ascii_alphanumeric()).collect();
+    let out: String = lower
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .collect();
     out.chars().take(16).collect()
 }
 
@@ -34,13 +37,7 @@ pub fn branch_short(branch: &str) -> String {
     let lower = b.to_lowercase();
     let slug: String = lower
         .chars()
-        .map(|c| {
-            if c.is_ascii_alphanumeric() {
-                c
-            } else {
-                '-'
-            }
-        })
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
         .collect();
     let collapsed = collapse_dashes(&slug);
     let trimmed = collapsed.trim_matches('-');
@@ -166,8 +163,16 @@ pub fn build_handle_from_env(env: &HashMap<String, String>) -> String {
             };
         }
     }
-    let repo = env.get("RELAY_REPO").map(|s| s.as_str()).unwrap_or("").trim();
-    let branch = env.get("RELAY_BRANCH").map(|s| s.as_str()).unwrap_or("").trim();
+    let repo = env
+        .get("RELAY_REPO")
+        .map(|s| s.as_str())
+        .unwrap_or("")
+        .trim();
+    let branch = env
+        .get("RELAY_BRANCH")
+        .map(|s| s.as_str())
+        .unwrap_or("")
+        .trim();
     build_handle(repo, branch, "")
 }
 
@@ -200,7 +205,11 @@ mod tests {
     #[test]
     fn test_build_handle_examples() {
         assert_eq!(
-            build_handle("tzervas/tg-agent-relay", "feat/agent-handles-bidirectional", ""),
+            build_handle(
+                "tzervas/tg-agent-relay",
+                "feat/agent-handles-bidirectional",
+                ""
+            ),
             "@tgagentrelay-agent-handles-bidire"
         );
         assert_eq!(build_handle("foo", "main", ""), "@foo-main");

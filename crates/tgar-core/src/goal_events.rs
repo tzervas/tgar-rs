@@ -11,7 +11,8 @@ static GOAL_FAIL: LazyLock<Regex> = LazyLock::new(|| {
     )
     .unwrap()
 });
-static UPDATE_GOAL_TOOL: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)update_goal").unwrap());
+static UPDATE_GOAL_TOOL: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)update_goal").unwrap());
 
 const SOFT_LINE: &str = "ℹ️ Goal idle (no active goal to update).";
 
@@ -36,7 +37,11 @@ pub fn is_update_goal_tool(tool_name: &str) -> bool {
 }
 
 /// Return skip (suppress), soft (one-liner), or pass (unchanged).
-pub fn classify_goal_noise(text: &str, tool_name: &str, hook_event: Option<&str>) -> GoalNoiseAction {
+pub fn classify_goal_noise(
+    text: &str,
+    tool_name: &str,
+    hook_event: Option<&str>,
+) -> GoalNoiseAction {
     let body = text.trim();
     if body.is_empty() && tool_name.is_empty() {
         return GoalNoiseAction::Pass;

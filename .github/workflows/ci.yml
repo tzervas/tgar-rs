@@ -2,9 +2,14 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # dev is where work accumulates and main is the release gate, so CI has to
+    # watch both. Listing only main meant a PR into dev triggered nothing at
+    # all — not a red, not a pending check, simply no CI. That was survivable
+    # while PRs targeted main directly; it stops being survivable the moment
+    # dev becomes the default target, which is now.
+    branches: [main, dev]
   pull_request:
-    branches: [main]
+    branches: [main, dev]
   workflow_dispatch:
 
 env:
@@ -17,7 +22,44 @@ jobs:
     runs-on: [self-hosted, linux, x64, podman]
     steps:
       - uses: actions/checkout@v6
+      # No toolchain pinned here on purpose: rust-toolchain.toml declares 1.96
+      # and rustup honours it, so naming a version in two places is how the two
+      # drift apart. Cargo.toml's rust-version = "1.96" is the third statement
+      # of the same fact and the one `cargo` enforces.
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo check --workspace --all-targets
       - run: cargo test --workspace
+
+  style:
+    # Separate job from check+test so a formatting nit cannot mask a real
+    # compile or test failure, and so its verdict is legible on its own.
+    #
+    # This gate did not exist, and the cost was measurable: `cargo fmt --check`
+    # was failing across 10 files in tgar-core, tgar-telegram and tgar by the
+    # time anyone ran it, having drifted with nothing able to notice. Same
+    # shape as the version drift .cz.toml was added to stop — a convention
+    # nothing enforces is a convention that is already untrue.
+    name: fmt + clippy
+    runs-on: [self-hosted, linux, x64, podman]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all -- --check
+
+      # Gated at clippy::all, with pedantic left as warnings. Cargo.toml opts
+      # this workspace into `pedantic = "warn"` deliberately, and there are 41
+      # of them today — must_use_candidate, missing_errors_doc,
+      # map_unwrap_or and friends. Gating on `-D warnings` would therefore make
+      # this job a 41-item cleanup rather than a gate, and the honest choice is
+      # to gate at the level the code actually holds rather than to ship a
+      # red check or to silence the lints.
+      #
+      # Measured: `-A clippy::pedantic -D clippy::all` exits 0 across the
+      # workspace right now, so this fails only on a real regression.
+      # Tightening to -D warnings is a follow-up, and worth doing once the
+      # pedantic backlog is cleared — not by disabling pedantic.
+      - run: cargo clippy --workspace --all-targets -- -A clippy::pedantic -D clippy::all

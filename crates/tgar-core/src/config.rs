@@ -25,8 +25,8 @@ pub fn load_config(path: &Path) -> Result<RelayConfig, String> {
     if !path.is_file() {
         return Err(format!("config not found: {}", path.display()));
     }
-    let text = std::fs::read_to_string(path)
-        .map_err(|e| format!("read {}: {e}", path.display()))?;
+    let text =
+        std::fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))?;
     if text.trim().is_empty() {
         return Err(format!("config empty: {}", path.display()));
     }
@@ -67,10 +67,7 @@ mod tests {
 
     #[test]
     fn load_minimal_toml() {
-        let dir = std::env::temp_dir().join(format!(
-            "tgar-config-test-{}",
-            std::process::id()
-        ));
+        let dir = std::env::temp_dir().join(format!("tgar-config-test-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("relay.toml");

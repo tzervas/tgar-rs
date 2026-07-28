@@ -76,10 +76,7 @@ impl HttpClient for MockHttpClient {
         *self.last_url.lock().unwrap() = Some(url.to_string());
         *self.last_body.lock().unwrap() = Some(body.to_string());
         let body = self.response_body.lock().unwrap().clone();
-        Ok(HttpResponse {
-            status: 200,
-            body,
-        })
+        Ok(HttpResponse { status: 200, body })
     }
 }
 

@@ -61,14 +61,22 @@ pub fn parse_github_remote(url: &str) -> (String, String) {
     }
     if let Some(caps) = GH_SSH.captures(url) {
         return (
-            caps.name("owner").map(|m| m.as_str().to_string()).unwrap_or_default(),
-            caps.name("repo").map(|m| m.as_str().to_string()).unwrap_or_default(),
+            caps.name("owner")
+                .map(|m| m.as_str().to_string())
+                .unwrap_or_default(),
+            caps.name("repo")
+                .map(|m| m.as_str().to_string())
+                .unwrap_or_default(),
         );
     }
     if let Some(caps) = GH_HTTPS.captures(url) {
         return (
-            caps.name("owner").map(|m| m.as_str().to_string()).unwrap_or_default(),
-            caps.name("repo").map(|m| m.as_str().to_string()).unwrap_or_default(),
+            caps.name("owner")
+                .map(|m| m.as_str().to_string())
+                .unwrap_or_default(),
+            caps.name("repo")
+                .map(|m| m.as_str().to_string())
+                .unwrap_or_default(),
         );
     }
     (String::new(), String::new())

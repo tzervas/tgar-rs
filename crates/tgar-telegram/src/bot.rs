@@ -45,10 +45,7 @@ fn response_ok(raw: &str) -> bool {
 
 /// Percent-encode form fields for Telegram Bot API (same shape as Python `urllib.parse.urlencode`).
 pub fn encode_send_message_form(params: &SendMessageParams<'_>) -> String {
-    let mut pairs: Vec<(&str, &str)> = vec![
-        ("chat_id", params.chat_id),
-        ("text", params.text),
-    ];
+    let mut pairs: Vec<(&str, &str)> = vec![("chat_id", params.chat_id), ("text", params.text)];
     if let Some(pm) = params.parse_mode.filter(|s| !s.is_empty()) {
         pairs.push(("parse_mode", pm));
     }

@@ -146,9 +146,7 @@ fn cmd_send(
     }
 
     if chat.is_empty() {
-        return Err(
-            "live send requires --chat-id or ALLOWED_CHAT_ID when BOT_TOKEN is set".into(),
-        );
+        return Err("live send requires --chat-id or ALLOWED_CHAT_ID when BOT_TOKEN is set".into());
     }
 
     let bot = TelegramBot::new(token, UreqHttpClient);
