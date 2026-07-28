@@ -7,8 +7,10 @@ pub mod agent_handle;
 pub mod agent_stamp;
 pub mod config;
 pub mod goal_events;
+pub mod metrics;
 
 pub use config::{default_config_path, load_config, RelayConfig};
+pub use metrics::{emit_metric, metrics_path};
 
 #[cfg(test)]
 mod tests {

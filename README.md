@@ -16,6 +16,7 @@
 | Version | shipping **0.10.x** | **0.1.0-dev** (`tgar version`) |
 | Outbound send | `tg-send.sh` / `send.py` (live) | `tgar send` — dry-run without `BOT_TOKEN`; live `sendMessage` + pagination when token set |
 | Config | full `relay.toml` + overlays | `tgar config check` — TOML parse + table list + `page_size` (schema stub) |
+| Metrics append | `.metrics.log` TSV (`metrics.py`) | `tgar-core::metrics` — library append (Phase 0; not a CLI cutover) |
 | Poll / route / hooks / TTS | full product | **not shipped** (see `docs/PORTING.md`) |
 | Operator default | **`RELAY_IMPL=python`** | opt-in only after dual-run green per surface |
 
