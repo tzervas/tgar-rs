@@ -24,6 +24,7 @@ Inventory map from upstream `tzervas/tg-agent-relay`. Phases match `plans/fracta
 | `__init__.py` | `tgar-core` (crate root re-exports) | 0 | Version surface; Python `0.10.x` ≠ Rust `0.1.0-dev` line |
 | `config.py` | `tgar-core::config` | 0 | `relay.toml` + `.chats.d` overlay |
 | `metrics.py` | `tgar-core::metrics` | 0 | TSV append to `.metrics.log` |
+| `spool.py` | `tgar-core::spool` | 0 / inbound | Durable put/drain/reclaim; no poll wiring |
 | `cli.py` | `tgar` binary subcommands | 0–7 | `version`, `hook`, `route`, `format`, … |
 | `agent_handle.py` | `tgar-core::agent_handle` | 4 | py2rust candidate |
 | `agent_stamp.py` | `tgar-core::agent_stamp` | 4 | py2rust candidate |
